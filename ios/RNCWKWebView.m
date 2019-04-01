@@ -106,13 +106,10 @@ static NSURLCredential* clientAuthenticationCredential;
       if (_messagingEnabled) {
           [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
           
-          NSString *source = [NSString stringWithFormat:
-                              @"window.%@ = {"
-                              "  postMessage: function (data) {"
-                              "    window.webkit.messageHandlers.%@.postMessage(String(data));"
-                              "  }"
-                              "};", MessageHandlerName, MessageHandlerName
-                              ];
+          NSString *source = @"window.originalPostMessage = window.postMessage;"
+                              "window.postMessage = function (data) {"
+                              "  window.webkit.messageHandlers.ReactNativeWebView.postMessage(data);"
+                              "}";
           
           WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
           [wkWebViewConfig.userContentController addUserScript:script];
