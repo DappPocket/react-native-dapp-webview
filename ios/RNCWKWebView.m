@@ -34,6 +34,7 @@ static NSURLCredential* clientAuthenticationCredential;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingProgress;
 @property (nonatomic, copy) RCTDirectEventBlock onShouldStartLoadWithRequest;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
+@property (nonatomic, strong) WKUserScript *atStartScript;
 @property (nonatomic, copy) WKWebView *webView;
 @end
 
@@ -88,8 +89,8 @@ static NSURLCredential* clientAuthenticationCredential;
   return nil;
 }
 
-- (void)didMoveToWindow
-{
+- (void)didMoveToWindow {
+    NSLog(@"didMoveToWindow~!!!!!!!!!!!!!");
   if (self.window != nil && _webView == nil) {
     WKWebViewConfiguration *wkWebViewConfig = [WKWebViewConfiguration new];
     if (_incognito) {
@@ -102,21 +103,28 @@ static NSURLCredential* clientAuthenticationCredential;
     }
     wkWebViewConfig.userContentController = [WKUserContentController new];
 
-    if (_messagingEnabled) {
-      [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
-
-      NSString *source = [NSString stringWithFormat:
-        @"window.%@ = {"
-         "  postMessage: function (data) {"
-         "    window.webkit.messageHandlers.%@.postMessage(String(data));"
-         "  }"
-         "};", MessageHandlerName, MessageHandlerName
-      ];
-
-      WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-      [wkWebViewConfig.userContentController addUserScript:script];
-    }
-
+      if (_messagingEnabled) {
+          [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
+          
+          NSString *source = [NSString stringWithFormat:
+                              @"window.%@ = {"
+                              "  postMessage: function (data) {"
+                              "    window.webkit.messageHandlers.%@.postMessage(String(data));"
+                              "  }"
+                              "};", MessageHandlerName, MessageHandlerName
+                              ];
+          
+          WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+          [wkWebViewConfig.userContentController addUserScript:script];
+      }
+      
+      if (_injectJavaScript) {
+          NSLog(@"_injectJavaScript: %@", _injectJavaScript);
+          WKUserScript *atStartScript = [[WKUserScript alloc] initWithSource:_injectJavaScript
+                                                      injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                   forMainFrameOnly:YES];
+          [wkWebViewConfig.userContentController addUserScript:atStartScript];
+      }
     wkWebViewConfig.allowsInlineMediaPlayback = _allowsInlineMediaPlayback;
 #if WEBKIT_IOS_10_APIS_AVAILABLE
     wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
@@ -675,4 +683,10 @@ static NSURLCredential* clientAuthenticationCredential;
   _bounces = bounces;
   _webView.scrollView.bounces = bounces;
 }
+
+// Add js code
+- (void)setInjectJavaScript:(NSString *)injectJavaScript {
+  _injectJavaScript = injectJavaScript;
+}
+
 @end
