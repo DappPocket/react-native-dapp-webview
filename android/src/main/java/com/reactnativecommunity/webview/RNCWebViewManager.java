@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.ConsoleMessage;
@@ -88,7 +89,7 @@ import javax.annotation.Nullable;
  */
 @ReactModule(name = RNCWebViewManager.REACT_CLASS)
 public class RNCWebViewManager extends SimpleViewManager<WebView> {
-
+  private static final String TAG = "DAPP_POCKET";
   public static final int COMMAND_GO_BACK = 1;
   public static final int COMMAND_GO_FORWARD = 2;
   public static final int COMMAND_RELOAD = 3;
@@ -363,6 +364,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ((RNCWebView) view).setInjectedJavaScript(injectedJavaScript);
   }
 
+  @ReactProp(name = "injectJavaScript")
+  public void setInjectJavaScript(WebView view, @Nullable String injectJavaScript) {
+      ((RNCWebView) view).setInjectJavaScript(injectJavaScript);
+  }
+
   @ReactProp(name = "messagingEnabled")
   public void setMessagingEnabled(WebView view, boolean enabled) {
     ((RNCWebView) view).setMessagingEnabled(enabled);
@@ -560,7 +566,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     return reactContext.getNativeModule(RNCWebViewModule.class);
   }
 
-  protected static class RNCWebViewClient extends WebViewClient {
+  protected static class RNCWebViewClient extends DappPocketWebClient {
 
     protected boolean mLastLoadFailed = false;
     protected @Nullable
@@ -569,7 +575,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @Override
     public void onPageFinished(WebView webView, String url) {
       super.onPageFinished(webView, url);
-
+      Log.d(TAG, "onPageFinished");
       if (!mLastLoadFailed) {
         RNCWebView reactWebView = (RNCWebView) webView;
 
@@ -582,6 +588,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @Override
     public void onPageStarted(WebView webView, String url, Bitmap favicon) {
       super.onPageStarted(webView, url, favicon);
+      Log.d(TAG, "onPageStarted");
       mLastLoadFailed = false;
 
       dispatchEvent(
@@ -729,6 +736,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       injectedJS = js;
     }
 
+    // Dapp pocket inject js befor load
+    public void setInjectJavaScript(@Nullable String js) {
+        Log.d(TAG, "hihi");
+        mRNCWebViewClient.setInjectJsCode(js);
+    }
+
     protected RNCWebViewBridge createRNCWebViewBridge(RNCWebView webView) {
       return new RNCWebViewBridge(webView);
     }
@@ -792,6 +805,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
        */
       @JavascriptInterface
       public void postMessage(String message) {
+        Log.d(TAG, "postMessage");
         mContext.onMessage(message);
       }
     }
